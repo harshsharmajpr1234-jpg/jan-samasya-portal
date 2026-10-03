@@ -44,6 +44,8 @@ function ComplaintFormInner() {
 
   const [ward, setWard] = useState<string>(params.get("ward") ?? "");
   const [manualText, setManualText] = useState("");
+  const [landmarkText, setLandmarkText] = useState("");
+  const [directionsText, setDirectionsText] = useState("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [gpsState, setGpsState] = useState<GpsState>("idle");
@@ -76,6 +78,17 @@ function ComplaintFormInner() {
         }
       })
       .catch(() => setFormError("Could not load complaint categories. Please refresh the page."));
+
+    // Check logged in citizen session to auto-fill details
+    fetch("/api/auth/citizen/session")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.authenticated && d.citizen) {
+          setName(d.citizen.name || "");
+          setMobile(d.citizen.mobile || "");
+        }
+      })
+      .catch(() => {});
 
     // Wards come from the application's ward configuration, not a hardcoded list.
     fetch("/api/wards")
@@ -130,7 +143,7 @@ function ComplaintFormInner() {
 
   const reset = () => {
     setSuccess(null);
-    setWard(""); setManualText("");
+    setWard(""); setManualText(""); setLandmarkText(""); setDirectionsText("");
     setLat(null); setLng(null); setGpsState("idle"); setGpsNote(null);
     setCategoryId(""); setName(""); setMobile(""); setDescription("");
     pickPhoto(null);
@@ -144,13 +157,20 @@ function ComplaintFormInner() {
 
     const errs: Record<string, string[]> = {};
     const manual = manualText.trim().replace(/\s+/g, " ");
+    const landmark = landmarkText.trim().replace(/\s+/g, " ");
 
-    // Colony / Area / Landmark is REQUIRED. GPS is never required.
     if (manual.length < 3) {
-      errs.manualLocationText = ["Please enter your colony, road, landmark or complete problem location"];
+      errs.manualLocationText = ["Please enter your street, colony, road or house number"];
     } else if (manual.length > 200) {
-      errs.manualLocationText = ["Please keep the location under 200 characters"];
+      errs.manualLocationText = ["Please keep the address under 200 characters"];
     }
+
+    if (landmark.length < 3) {
+      errs.landmarkText = ["Please enter a nearby landmark (e.g. near school, temple, main road)"];
+    } else if (landmark.length > 200) {
+      errs.landmarkText = ["Please keep the landmark under 200 characters"];
+    }
+
     if (!categoryId) errs.categoryId = ["Please pick a complaint category"];
     if (mobile.length !== 10 || !/^[6-9]\d{9}$/.test(mobile)) {
       errs.citizenMobile = ["Enter a valid 10-digit Indian mobile number"];
@@ -170,10 +190,11 @@ function ComplaintFormInner() {
       fd.set("citizenMobile", mobile);
       fd.set("categoryId", categoryId);
       fd.set("description", description);
-      // Citizen-typed location is stored as given — never replaced by GPS.
       fd.set("manualLocationText", manual);
+      fd.set("addressText", manual);
+      fd.set("landmarkText", landmark);
+      if (directionsText.trim()) fd.set("directionsText", directionsText.trim());
       if (ward) fd.set("ward", ward);
-      // GPS is attached only if it was captured — strictly optional.
       if (lat !== null && lng !== null) {
         fd.set("lat", String(lat));
         fd.set("lng", String(lng));
@@ -336,9 +357,9 @@ function ComplaintFormInner() {
           <strong>Citizen-provided location</strong>.
         </p>
 
-        <div className="mt-5 grid gap-5 rounded-2xl border border-line bg-paper p-5 sm:grid-cols-[200px_1fr]">
+        <div className="mt-5 grid gap-5 rounded-2xl border border-line bg-paper p-5 sm:grid-cols-2">
           <div>
-            <label className={labelCls} htmlFor="ward">Ward</label>
+            <label className={labelCls} htmlFor="ward">Ward Selection *</label>
             <select id="ward" className={inputCls} value={ward} onChange={(e) => setWard(e.target.value)}>
               <option value="">Select ward</option>
               {wardOptions.map((w) => (
@@ -351,7 +372,7 @@ function ComplaintFormInner() {
           </div>
 
           <div>
-            <label className={labelCls} htmlFor="manualLocationText">Colony / Area / Landmark *</label>
+            <label className={labelCls} htmlFor="manualLocationText">Full Address / Road / Colony *</label>
             <input
               id="manualLocationText"
               className={inputCls}
@@ -359,20 +380,43 @@ function ComplaintFormInner() {
               onChange={(e) => setManualText(e.target.value)}
               onBlur={(e) => setManualText(e.target.value.trim().replace(/\s+/g, " "))}
               maxLength={200}
-              placeholder="Enter your colony, road, landmark or complete problem location"
+              placeholder="e.g. Street, colony, road or house number"
               required
               aria-required="true"
             />
-            <div className="mt-1 flex items-start justify-between gap-3">
-              <p className="text-[11px] leading-relaxed text-muted-ink">
-                Type any locality, colony, road, nearby landmark or the full problem location — it does{" "}
-                <strong>not</strong> need to exist in our list.
-              </p>
-              <span className="shrink-0 text-[11px] text-muted-ink">{manualText.trim().length}/200</span>
-            </div>
             {fieldErrors.manualLocationText && (
               <p className="mt-1 text-xs text-flame" role="alert">{fieldErrors.manualLocationText[0]}</p>
             )}
+          </div>
+
+          <div>
+            <label className={labelCls} htmlFor="landmarkText">Nearby Landmark *</label>
+            <input
+              id="landmarkText"
+              className={inputCls}
+              value={landmarkText}
+              onChange={(e) => setLandmarkText(e.target.value)}
+              onBlur={(e) => setLandmarkText(e.target.value.trim().replace(/\s+/g, " "))}
+              maxLength={200}
+              placeholder="e.g. Near school, temple, hospital, main road or shop"
+              required
+              aria-required="true"
+            />
+            {fieldErrors.landmarkText && (
+              <p className="mt-1 text-xs text-flame" role="alert">{fieldErrors.landmarkText[0]}</p>
+            )}
+          </div>
+
+          <div>
+            <label className={labelCls} htmlFor="directionsText">Additional Directions (optional)</label>
+            <input
+              id="directionsText"
+              className={inputCls}
+              value={directionsText}
+              onChange={(e) => setDirectionsText(e.target.value)}
+              maxLength={300}
+              placeholder="e.g. Opposite the park, beside the corner shop"
+            />
           </div>
         </div>
 

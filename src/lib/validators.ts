@@ -67,6 +67,10 @@ export const createComplaintSchema = z
      */
     manualLocationText: manualLocationSchema,
     addressText: z.string().trim().max(200, "Address is limited to 200 characters").optional().or(z.literal("")),
+    /** Required nearby landmark (e.g. Near school, temple, main road) */
+    landmarkText: z.string().trim().min(3, "Landmark must be at least 3 characters").max(200, "Landmark text is limited to 200 characters").optional().or(z.literal("")),
+    /** Additional directions (optional, e.g. Opposite the park) */
+    directionsText: z.string().trim().max(300, "Directions are limited to 300 characters").optional().or(z.literal("")),
     /** Option B — GPS. Both must be present to count as a GPS location. */
     lat: latSchema.optional(),
     lng: lngSchema.optional(),
@@ -94,13 +98,6 @@ export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
 export const LOCATION_METHODS = ["selected_area", "gps", "manual", "gps_and_manual"] as const;
 export type LocationMethod = (typeof LOCATION_METHODS)[number];
 
-/**
- * Derives how the citizen supplied the location. Computed server-side so the
- * client can never assert a method that contradicts the stored fields.
- *
- * Note: manual text is NEVER overwritten by GPS — when both exist we record
- * `gps_and_manual` and keep both pieces of data.
- */
 export function deriveLocationMethod(input: {
   areaId?: string;
   lat?: number | string;
@@ -120,6 +117,28 @@ export function deriveLocationMethod(input: {
 export const trackComplaintSchema = z.object({
   trackingId: trackingIdSchema,
   mobile: mobileSchema,
+});
+
+export const citizenRegisterSchema = z
+  .object({
+    name: z.string().trim().min(2, "Full name is too short").max(80, "Full name is too long"),
+    mobile: mobileSchema,
+    email: z.string().trim().toLowerCase().email("Enter a valid email").optional().or(z.literal("")),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(100),
+    confirmPassword: z.string(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.password !== v.confirmPassword) {
+      ctx.addIssue({ code: "custom", message: "Passwords do not match", path: ["confirmPassword"] });
+    }
+  });
+
+export const citizenLoginSchema = z.object({
+  mobile: mobileSchema,
+  password: z.string().min(1, "Password is required").max(100),
 });
 
 export const loginSchema = z.object({

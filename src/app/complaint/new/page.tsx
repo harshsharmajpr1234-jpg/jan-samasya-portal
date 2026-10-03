@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { getCitizenSession } from "@/lib/auth";
 import ComplaintForm from "@/components/complaint/ComplaintForm";
 import { FileText } from "lucide-react";
 
@@ -11,7 +13,12 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function NewComplaintPage() {
+export default async function NewComplaintPage() {
+  const session = await getCitizenSession();
+  if (!session) {
+    redirect("/login?redirect=/complaint/new");
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-2xl text-center">
@@ -23,8 +30,7 @@ export default function NewComplaintPage() {
           File a complaint
         </h1>
         <p className="mt-3 text-muted-ink">
-          Only <strong>Ward 12, Ward 13 and Ward 14</strong> are served. Your mobile number is required — it is
-          your private key to track progress later. No account, no app, no cost.
+          Welcome, <strong>{session.name}</strong> (+91 {session.mobile}). Only <strong>Ward 12, Ward 13 and Ward 14</strong> are served.
         </p>
       </div>
       <Suspense fallback={<div className="mx-auto mt-10 h-96 max-w-4xl animate-pulse rounded-3xl bg-paper-2" />}>

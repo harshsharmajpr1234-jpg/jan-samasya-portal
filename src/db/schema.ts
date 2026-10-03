@@ -121,10 +121,27 @@ export const officers = pgTable(
   (t) => [uniqueIndex("officers_email_uq").on(t.email)],
 );
 
+export const citizens = pgTable(
+  "citizens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    mobile: varchar("mobile", { length: 10 }).notNull(),
+    email: text("email"),
+    passwordHash: text("password_hash").notNull(),
+    active: boolean("active").notNull().default(true),
+    sessionVersion: integer("session_version").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("citizens_mobile_uq").on(t.mobile)],
+);
+
 export const complaints = pgTable(
   "complaints",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    /** Optional reference to registered citizen account */
+    citizenId: uuid("citizen_id").references(() => citizens.id),
     /** Human-friendly unique ID shown to citizens, e.g. JSNM-12-KF4Q7X */
     trackingId: varchar("tracking_id", { length: 24 }).notNull(),
     citizenName: text("citizen_name").notNull(),
@@ -142,6 +159,10 @@ export const complaints = pgTable(
     lat: numeric("lat", { precision: 9, scale: 6 }),
     lng: numeric("lng", { precision: 9, scale: 6 }),
     addressText: text("address_text"),
+    /** Nearby landmark (e.g., Near school, temple, main road) */
+    landmarkText: text("landmark_text"),
+    /** Additional directions (optional, e.g., Opposite the park) */
+    directionsText: text("directions_text"),
     /**
      * Option C — free text typed by the citizen (colony / road / landmark).
      * LABELLED "Citizen-provided location" in the UI and NEVER copied into the
@@ -167,6 +188,7 @@ export const complaints = pgTable(
     uniqueIndex("complaints_tracking_uq").on(t.trackingId),
     index("complaints_ward_status_idx").on(t.ward, t.status),
     index("complaints_mobile_idx").on(t.citizenMobile),
+    index("complaints_citizen_id_idx").on(t.citizenId),
     index("complaints_created_idx").on(t.createdAt),
   ],
 );
@@ -283,6 +305,7 @@ export type WardLocality = typeof wardLocalities.$inferSelect;
 export type VerificationStatus = WardLocality["verificationStatus"];
 export type Category = typeof categories.$inferSelect;
 export type Officer = typeof officers.$inferSelect;
+export type Citizen = typeof citizens.$inferSelect;
 export type Complaint = typeof complaints.$inferSelect;
 export type ComplaintEvent = typeof complaintEvents.$inferSelect;
 export type OfficerRole = Officer["role"];

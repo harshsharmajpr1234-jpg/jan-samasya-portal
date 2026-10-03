@@ -1,4 +1,4 @@
-import { SESSION_COOKIE, SESSION_MAX_AGE_SEC } from "./jwt";
+import { SESSION_COOKIE, CITIZEN_SESSION_COOKIE, SESSION_MAX_AGE_SEC } from "./jwt";
 
 /**
  * Single source of truth for the session cookie.
@@ -101,4 +101,25 @@ export function clearSessionCookie(req: Request): string {
   return buildSessionCookie({ req, value: "", maxAgeSec: 0 });
 }
 
-export { SESSION_COOKIE };
+export function buildCitizenSessionCookie({ req, value, maxAgeSec }: CookieOptions): string {
+  const crossSite = isCrossSiteRequest(req);
+  const secure = crossSite || isHttpsRequest(req);
+  const sameSite = crossSite ? "None" : "Lax";
+
+  const parts = [
+    `${CITIZEN_SESSION_COOKIE}=${value}`,
+    "Path=/",
+    "HttpOnly",
+    `SameSite=${sameSite}`,
+    `Max-Age=${maxAgeSec ?? SESSION_MAX_AGE_SEC}`,
+  ];
+  if (secure) parts.push("Secure");
+  if (crossSite) parts.push("Partitioned");
+  return parts.join("; ");
+}
+
+export function clearCitizenSessionCookie(req: Request): string {
+  return buildCitizenSessionCookie({ req, value: "", maxAgeSec: 0 });
+}
+
+export { SESSION_COOKIE, CITIZEN_SESSION_COOKIE };

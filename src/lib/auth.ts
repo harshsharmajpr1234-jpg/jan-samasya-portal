@@ -1,5 +1,12 @@
 import { cookies } from "next/headers";
-import { verifySession, SESSION_COOKIE, type SessionPayload } from "./jwt";
+import {
+  verifySession,
+  verifyCitizenSession,
+  SESSION_COOKIE,
+  CITIZEN_SESSION_COOKIE,
+  type SessionPayload,
+  type CitizenSessionPayload,
+} from "./jwt";
 
 /**
  * Server-side session lookup (route handlers and server components).
@@ -39,6 +46,48 @@ export async function getSession(): Promise<SessionPayload | null> {
     console.error("session-revocation-check-failed", err);
   }
   return payload;
+}
+
+export async function getCitizenSession(): Promise<CitizenSessionPayload | null> {
+  const store = await cookies();
+  const token = store.get(CITIZEN_SESSION_COOKIE)?.value;
+  if (!token) return null;
+  const payload = await verifyCitizenSession(token);
+  if (!payload) return null;
+
+  try {
+    const { db } = await import("@/db");
+    const { citizens } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db
+      .select({
+        sessionVersion: citizens.sessionVersion,
+        active: citizens.active,
+      })
+      .from(citizens)
+      .where(eq(citizens.id, payload.sub))
+      .limit(1);
+    if (!row || !row.active) return null;
+
+    const tokenVersion = payload.sessionVersion ?? 0;
+    if (tokenVersion !== row.sessionVersion) return null;
+  } catch (err) {
+    console.error("citizen-session-check-failed", err);
+  }
+  return payload;
+}
+
+export async function requireCitizen(): Promise<
+  { ok: true; session: CitizenSessionPayload } | { ok: false; response: Response }
+> {
+  const session = await getCitizenSession();
+  if (!session) {
+    return {
+      ok: false,
+      response: Response.json({ error: "Citizen login required" }, { status: 401 }),
+    };
+  }
+  return { ok: true, session };
 }
 
 /** Throws-aware helper for API routes: returns session or a 401 Response. */

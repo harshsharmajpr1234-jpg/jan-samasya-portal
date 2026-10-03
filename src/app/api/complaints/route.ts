@@ -8,6 +8,7 @@ import { generateUniqueTrackingId } from "@/lib/tracking";
 import { validateAndSaveUpload } from "@/lib/uploads";
 import { isWardConfigured } from "@/lib/wards";
 import { STATUS_LABEL } from "@/lib/constants";
+import { getCitizenSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,8 @@ function str(v: FormDataEntryValue | null): string | undefined {
  * Mobile number is mandatory and becomes the citizen's tracking credential.
  */
 export async function POST(req: Request) {
+  const citizenSession = await getCitizenSession();
+
   // Rate limit: 5 complaint registrations per 10 minutes per IP.
   const rl = rateLimit(`complaint:${clientIp(req)}`, 5, 10 * 60 * 1000);
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
@@ -40,13 +43,15 @@ export async function POST(req: Request) {
       const maybePhoto = form.get("photo");
       if (maybePhoto instanceof File && maybePhoto.size > 0) photo = maybePhoto;
       raw = {
-        citizenName: str(form.get("citizenName")),
-        citizenMobile: str(form.get("citizenMobile")),
+        citizenName: str(form.get("citizenName")) || citizenSession?.name,
+        citizenMobile: str(form.get("citizenMobile")) || citizenSession?.mobile,
         ward: str(form.get("ward")),
         areaId: str(form.get("areaId")),
         categoryId: str(form.get("categoryId")),
         description: str(form.get("description")),
         addressText: str(form.get("addressText")),
+        landmarkText: str(form.get("landmarkText")),
+        directionsText: str(form.get("directionsText")),
         manualLocationText: str(form.get("manualLocationText")),
         lat: str(form.get("lat")),
         lng: str(form.get("lng")),
@@ -77,8 +82,6 @@ export async function POST(req: Request) {
   }
 
   // --- Referential checks ---
-  // Option A is optional: an area is only checked when one was selected, and a
-  // manually typed location is deliberately NOT required to exist in `areas`.
   let area: typeof areas.$inferSelect | undefined;
   if (input.areaId !== undefined) {
     const [found] = await db
@@ -113,10 +116,8 @@ export async function POST(req: Request) {
 
   // --- Persist (complaint + immutable audit event, atomically) ---
   try {
-    // Never derive a ward from GPS: ward is only what the citizen selected.
     const ward = input.ward ?? null;
     const trackingId = await generateUniqueTrackingId(ward);
-    // Method is derived server-side from the fields actually present.
     const locationMethod = deriveLocationMethod(input);
     const locationLabel = area
       ? `${area.name}${ward !== null ? `, Ward ${ward}` : ""}`
@@ -128,6 +129,7 @@ export async function POST(req: Request) {
       const [row] = await tx
         .insert(complaints)
         .values({
+          citizenId: citizenSession?.sub ?? null,
           trackingId,
           citizenName: input.citizenName,
           citizenMobile: input.citizenMobile,
@@ -136,7 +138,8 @@ export async function POST(req: Request) {
           categoryId: input.categoryId,
           description: input.description,
           addressText: input.addressText || null,
-          // Manual text is stored as given — never replaced by GPS coordinates.
+          landmarkText: input.landmarkText || null,
+          directionsText: input.directionsText || null,
           manualLocationText: input.manualLocationText ?? null,
           locationMethod,
           lat: input.lat !== undefined ? String(input.lat) : null,
