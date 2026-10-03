@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { db } from "@/db";
-import { categories, complaints } from "@/db/schema";
+import { categories, citizens, complaints } from "@/db/schema";
 import { asc, count, eq, sql } from "drizzle-orm";
 import {
   ArrowRight,
@@ -25,24 +25,43 @@ export const dynamic = "force-dynamic";
 
 async function getStats() {
   try {
-    const [totals] = await db
-      .select({
-        total: count(),
-        resolved: sql<number>`count(*) filter (where ${complaints.status} = 'resolved')::int`,
-        inProgress: sql<number>`count(*) filter (where ${complaints.status} = 'in_progress')::int`,
-      })
-      .from(complaints);
-    const wardRows = await db
-      .select({
-        ward: complaints.ward,
-        total: count(),
-        resolved: sql<number>`count(*) filter (where ${complaints.status} = 'resolved')::int`,
-      })
-      .from(complaints)
-      .groupBy(complaints.ward);
-    return { totals, wardRows };
+    const [[complaintTotals], [citizenTotals], wardRows] = await Promise.all([
+      db
+        .select({
+          total: count(),
+          resolved: sql<number>`count(*) filter (where ${complaints.status} = 'resolved')::int`,
+          inProgress: sql<number>`count(*) filter (where ${complaints.status} = 'in_progress')::int`,
+        })
+        .from(complaints),
+      db
+        .select({
+          totalCitizens: count(),
+        })
+        .from(citizens),
+      db
+        .select({
+          ward: complaints.ward,
+          total: count(),
+          resolved: sql<number>`count(*) filter (where ${complaints.status} = 'resolved')::int`,
+        })
+        .from(complaints)
+        .groupBy(complaints.ward),
+    ]);
+
+    return {
+      totals: {
+        totalComplaints: complaintTotals?.total ?? 0,
+        resolved: complaintTotals?.resolved ?? 0,
+        inProgress: complaintTotals?.inProgress ?? 0,
+        registeredCitizens: citizenTotals?.totalCitizens ?? 0,
+      },
+      wardRows,
+    };
   } catch {
-    return { totals: { total: 0, resolved: 0, inProgress: 0 }, wardRows: [] };
+    return {
+      totals: { totalComplaints: 0, resolved: 0, inProgress: 0, registeredCitizens: 0 },
+      wardRows: [],
+    };
   }
 }
 
@@ -149,15 +168,14 @@ export default async function HomePage() {
           </div>
 
           <Reveal delay={200} className="relative">
-            <div className="relative">
-              <div className="absolute -inset-3 rounded-[2.2rem] bg-ink/[0.04]" aria-hidden />
+            <div className="relative overflow-hidden rounded-[2rem] border border-line bg-gradient-to-br from-paper via-cream to-paper-2 shadow-lift">
               <Image
                 src="/images/hero-civic.jpg"
                 alt="Illustration of neighbours and civic workers improving a ward together"
                 width={1024}
                 height={768}
                 priority
-                className="relative w-full rounded-[2rem] border border-line object-cover shadow-lift"
+                className="relative h-[360px] w-full object-cover sm:h-[420px]"
               />
               {/* Floating live counters */}
               <div className="absolute -left-3 top-6 animate-float rounded-2xl border border-line bg-cream/95 px-4 py-3 shadow-lift backdrop-blur sm:-left-6">
@@ -170,9 +188,9 @@ export default async function HomePage() {
                 className="absolute -bottom-5 right-4 animate-float rounded-2xl border border-line bg-ink px-4 py-3 text-cream shadow-lift"
                 style={{ animationDelay: "1.4s" }}
               >
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cream/60">Total registered</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cream/60">Registered Citizens</p>
                 <p className="font-display text-2xl font-bold text-saffron">
-                  <StatNumber value={totals?.total ?? 0} />
+                  <StatNumber value={totals?.registeredCitizens ?? 0} />
                 </p>
               </div>
             </div>
@@ -184,10 +202,10 @@ export default async function HomePage() {
       <section className="border-y border-ink/10 bg-ink bg-grid-dark text-cream">
         <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-cream/10 px-4 sm:px-6 md:grid-cols-4">
           {[
-            { label: "कुल पंजीकृत · Registered", value: totals?.total ?? 0 },
-            { label: "Pending review", value: (totals?.total ?? 0) - (totals?.resolved ?? 0) - (totals?.inProgress ?? 0) },
-            { label: "Being worked on", value: totals?.inProgress ?? 0 },
-            { label: "Resolved · सुलझी", value: totals?.resolved ?? 0 },
+            { label: "पंजीकृत नागरिक · Citizens", value: totals?.registeredCitizens ?? 0 },
+            { label: "कुल शिकायतें · Total Filed", value: totals?.totalComplaints ?? 0 },
+            { label: "प्रगति में · In Progress", value: totals?.inProgress ?? 0 },
+            { label: "सुलझी · Resolved", value: totals?.resolved ?? 0 },
           ].map((s) => (
             <div key={s.label} className="px-5 py-7 text-center">
               <p className="font-display text-3xl font-bold text-saffron">
