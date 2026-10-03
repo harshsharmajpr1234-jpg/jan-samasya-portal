@@ -48,8 +48,11 @@ function ComplaintFormInner() {
   const [directionsText, setDirectionsText] = useState("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [capturedAt, setCapturedAt] = useState<string | null>(null);
   const [gpsState, setGpsState] = useState<GpsState>("idle");
   const [gpsNote, setGpsNote] = useState<string | null>(null);
+  const [copiedCoords, setCopiedCoords] = useState(false);
 
   const [categoryId, setCategoryId] = useState("");
   const [name, setName] = useState("");
@@ -113,7 +116,7 @@ function ComplaintFormInner() {
   const captureGps = () => {
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
       setGpsState("unsupported");
-      setGpsNote("This device cannot share a GPS location. You can still submit using the location you typed.");
+      setGpsNote("This device cannot share a GPS location. You can still submit using your typed problem address.");
       return;
     }
     setGpsState("locating");
@@ -122,29 +125,39 @@ function ComplaintFormInner() {
       (pos) => {
         setLat(Number(pos.coords.latitude.toFixed(6)));
         setLng(Number(pos.coords.longitude.toFixed(6)));
+        setAccuracy(Number(pos.coords.accuracy.toFixed(1)));
+        setCapturedAt(new Date().toISOString());
         setGpsState("captured");
         setGpsNote("Location captured successfully");
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
           setGpsState("denied");
-          setGpsNote("Location permission was denied. That is fine — just type your colony or landmark above and submit.");
+          setGpsNote("Location permission was denied. You can still submit using your typed problem address.");
         } else if (err.code === err.POSITION_UNAVAILABLE) {
           setGpsState("unavailable");
-          setGpsNote("Your location is currently unavailable. You can still submit using the location you typed.");
+          setGpsNote("GPS location is unavailable on your device. You can still submit using your typed problem address.");
         } else {
           setGpsState("timeout");
-          setGpsNote("Getting your location took too long. You can still submit using the location you typed.");
+          setGpsNote("Getting your location timed out. You can still submit using your typed problem address.");
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   };
 
+  const copyCoordinates = () => {
+    if (lat !== null && lng !== null) {
+      navigator.clipboard.writeText(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      setCopiedCoords(true);
+      setTimeout(() => setCopiedCoords(false), 2000);
+    }
+  };
+
   const reset = () => {
     setSuccess(null);
     setWard(""); setManualText(""); setLandmarkText(""); setDirectionsText("");
-    setLat(null); setLng(null); setGpsState("idle"); setGpsNote(null);
+    setLat(null); setLng(null); setAccuracy(null); setCapturedAt(null); setGpsState("idle"); setGpsNote(null);
     setCategoryId(""); setName(""); setMobile(""); setDescription("");
     pickPhoto(null);
     setFieldErrors({}); setFormError(null);
@@ -216,6 +229,8 @@ function ComplaintFormInner() {
       if (lat !== null && lng !== null) {
         fd.set("lat", String(lat));
         fd.set("lng", String(lng));
+        if (accuracy !== null) fd.set("locationAccuracy", String(accuracy));
+        if (capturedAt) fd.set("locationCapturedAt", capturedAt);
       }
       if (photo) fd.set("photo", photo);
 
@@ -443,10 +458,9 @@ function ComplaintFormInner() {
         <div className="mt-4 rounded-2xl border border-dashed border-line bg-paper p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-ink-2">Optional: also attach your GPS position</p>
+              <p className="text-sm font-semibold text-ink-2">📍 Use my current location (Optional GPS)</p>
               <p className="mt-1 text-[11px] leading-relaxed text-muted-ink">
-                Sharing a GPS location is entirely optional and is requested only when you press the button.
-                You can always submit without it.
+                Request browser GPS permission to attach high-accuracy decimal coordinates. Manual address entry is always available.
               </p>
             </div>
             <button
@@ -460,17 +474,39 @@ function ComplaintFormInner() {
               ) : (
                 <Crosshair className="h-4 w-4" aria-hidden />
               )}
-              Use my current location
+              {gpsState === "captured" ? "Refresh location" : "📍 Use my current location"}
             </button>
           </div>
 
-          {gpsState === "captured" && (
-            <p
-              className="mt-3 flex items-center gap-2 rounded-xl border border-leaf/30 bg-resolved-bg px-3 py-2 text-sm font-semibold text-resolved"
-              role="status"
-            >
-              <CheckCircle2 className="h-4 w-4" aria-hidden /> Location captured successfully
-            </p>
+          {gpsState === "captured" && lat !== null && lng !== null && (
+            <div className="mt-4 rounded-xl border border-leaf/30 bg-resolved-bg/70 p-4 text-ink" role="status">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-resolved">
+                  <CheckCircle2 className="h-4 w-4" aria-hidden /> Location captured successfully
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={copyCoordinates}
+                    className="rounded-lg bg-cream border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-paper-2"
+                  >
+                    {copiedCoords ? "Copied!" : "Copy coordinates"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={captureGps}
+                    className="rounded-lg bg-cream border border-line px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-paper-2"
+                  >
+                    Refresh location
+                  </button>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-2 text-xs font-mono sm:grid-cols-3">
+                <p><strong>Latitude:</strong> {lat.toFixed(6)}</p>
+                <p><strong>Longitude:</strong> {lng.toFixed(6)}</p>
+                {accuracy !== null && <p><strong>Accuracy:</strong> ~{accuracy} metres</p>}
+              </div>
+            </div>
           )}
           {gpsState === "locating" && gpsNote && (
             <p className="mt-3 text-xs text-muted-ink" role="status">{gpsNote}</p>

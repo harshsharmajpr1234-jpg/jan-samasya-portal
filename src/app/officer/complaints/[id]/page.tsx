@@ -10,7 +10,6 @@ import { canViewComplaint } from "@/lib/rbac";
 import OfficerShell from "@/components/officer/OfficerShell";
 import StatusBadge from "@/components/StatusBadge";
 import ComplaintActions from "@/components/officer/ComplaintActions";
-import LeafletReadOnly from "@/components/map/LeafletReadOnly";
 import { categoryIcon } from "@/lib/category-icons";
 import { ArrowLeft, BadgeCheck, EyeOff, FileText, MapPin, MessageSquareQuote, Phone, UserRound } from "lucide-react";
 
@@ -187,18 +186,23 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
           )}
 
           {lat !== null && lng !== null && (
-            <div className="rounded-3xl border border-line bg-cream p-4 shadow-card">
+            <div className="rounded-3xl border border-line bg-cream p-5 shadow-card">
               <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-ink">
-                <MapPin className="h-4 w-4 text-flame" aria-hidden /> Reported location · {lat.toFixed(5)}, {lng.toFixed(5)}
+                <MapPin className="h-4 w-4 text-flame" aria-hidden /> Captured GPS Coordinates
               </p>
-              <LeafletReadOnly lat={lat} lng={lng} />
+              <div className="rounded-2xl border border-line bg-paper p-4 font-mono text-xs text-ink space-y-1.5">
+                <p><strong>Latitude:</strong> {lat.toFixed(6)}</p>
+                <p><strong>Longitude:</strong> {lng.toFixed(6)}</p>
+                {c.locationAccuracy && <p><strong>Accuracy:</strong> ~{c.locationAccuracy} metres</p>}
+                {c.locationCapturedAt && <p><strong>Captured at:</strong> {fmt(c.locationCapturedAt)}</p>}
+              </div>
               <a
-                href={`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`}
+                href={`https://maps.google.com/?q=${lat},${lng}`}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-2 inline-block text-xs font-bold text-teal-civic hover:underline"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-ink px-4 py-2.5 text-xs font-bold text-cream transition hover:bg-ink-2"
               >
-                Open in OpenStreetMap →
+                <MapPin className="h-3.5 w-3.5 text-saffron" aria-hidden /> Open location in Google Maps →
               </a>
             </div>
           )}

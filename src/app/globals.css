@@ -92,19 +92,7 @@ body {
   box-shadow: var(--shadow-lift);
 }
 
-/* Leaflet theming to match the portal */
-.leaflet-container {
-  font-family: var(--font-body);
-  background: #e8e2d4;
-  outline: none;
-}
-.leaflet-popup-content-wrapper {
-  border-radius: 14px;
-  box-shadow: var(--shadow-card);
-}
-.pin-marker {
-  filter: drop-shadow(0 6px 8px rgb(14 24 48 / 0.35));
-}
+
 
 /* Thin elegant scrollbar for panels */
 .nice-scroll::-webkit-scrollbar { width: 8px; height: 8px; }

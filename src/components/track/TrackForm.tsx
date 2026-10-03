@@ -16,10 +16,6 @@ import {
 import StatusBadge from "@/components/StatusBadge";
 import type { ComplaintStatusValue } from "@/lib/constants";
 
-const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
-  ssr: false,
-  loading: () => <div className="h-[260px] w-full animate-pulse rounded-2xl bg-paper-2" />,
-});
 
 interface TimelineEvent {
   type: "created" | "status_changed" | "assigned" | "remark_added";
@@ -238,11 +234,24 @@ function TrackFormInner() {
                 </figure>
               )}
               {result.lat !== null && result.lng !== null && (
-                <div className="rounded-3xl border border-line bg-cream p-3 shadow-card">
-                  <LeafletMap lat={result.lat} lng={result.lng} readOnly height={248} />
-                  <p className="flex items-center gap-1.5 px-2 pt-2 text-[11px] text-muted-ink">
-                    <MapPin className="h-3 w-3 text-flame" aria-hidden /> Location pin you dropped
-                  </p>
+                <div className="rounded-3xl border border-line bg-cream p-5 shadow-card flex flex-col justify-between">
+                  <div>
+                    <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-ink">
+                      <MapPin className="h-4 w-4 text-flame" aria-hidden /> Captured GPS Coordinates
+                    </p>
+                    <div className="mt-3 rounded-2xl border border-line bg-paper p-3.5 font-mono text-xs text-ink space-y-1">
+                      <p><strong>Latitude:</strong> {result.lat.toFixed(6)}</p>
+                      <p><strong>Longitude:</strong> {result.lng.toFixed(6)}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={`https://maps.google.com/?q=${result.lat},${result.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-xl bg-ink px-4 py-2.5 text-xs font-bold text-cream transition hover:bg-ink-2"
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-saffron" aria-hidden /> Open location in Google Maps →
+                  </a>
                 </div>
               )}
             </div>

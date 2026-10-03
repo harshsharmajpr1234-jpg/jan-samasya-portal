@@ -158,6 +158,8 @@ export const complaints = pgTable(
     photoPath: text("photo_path"),
     lat: numeric("lat", { precision: 9, scale: 6 }),
     lng: numeric("lng", { precision: 9, scale: 6 }),
+    locationAccuracy: numeric("location_accuracy", { precision: 8, scale: 2 }),
+    locationCapturedAt: timestamp("location_captured_at", { withTimezone: true }),
     addressText: text("address_text"),
     /** Nearby landmark (e.g., Near school, temple, main road) */
     landmarkText: text("landmark_text"),

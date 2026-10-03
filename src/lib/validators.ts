@@ -81,6 +81,8 @@ export const createComplaintSchema = z
     /** Option B — GPS. Both must be present to count as a GPS location. */
     lat: latSchema.optional(),
     lng: lngSchema.optional(),
+    locationAccuracy: z.coerce.number().optional(),
+    locationCapturedAt: z.string().optional(),
   })
   .superRefine((v, ctx) => {
     // `manualLocationText` is required by the field schema above, so a usable

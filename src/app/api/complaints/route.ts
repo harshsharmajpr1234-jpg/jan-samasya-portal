@@ -62,6 +62,8 @@ export async function POST(req: Request) {
         manualLocationText: str(form.get("manualLocationText")),
         lat: str(form.get("lat")),
         lng: str(form.get("lng")),
+        locationAccuracy: str(form.get("locationAccuracy")),
+        locationCapturedAt: str(form.get("locationCapturedAt")),
       };
     } else if (contentType.includes("application/json")) {
       raw = await req.json();
@@ -166,6 +168,8 @@ export async function POST(req: Request) {
           locationMethod,
           lat: input.lat !== undefined ? String(input.lat) : null,
           lng: input.lng !== undefined ? String(input.lng) : null,
+          locationAccuracy: input.locationAccuracy !== undefined ? String(input.locationAccuracy) : null,
+          locationCapturedAt: input.locationCapturedAt ? new Date(input.locationCapturedAt) : null,
           photoPath,
         })
         .returning();
