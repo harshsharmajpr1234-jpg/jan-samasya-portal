@@ -24,7 +24,7 @@ export function isAdmin(session: SessionPayload): boolean {
 
 /** True when the account holds the explicit all-wards permission. */
 export function hasAllWards(session: SessionPayload): boolean {
-  return session.wardScope === "all";
+  return session.wardScope === "all" || session.role === "admin";
 }
 
 /**

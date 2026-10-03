@@ -61,6 +61,7 @@ async function main() {
     passwordHash: await hashPassword(password),
     role: "admin",
     ward: null,
+    wardScope: "all",
     active: true,
   });
 
