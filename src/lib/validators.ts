@@ -5,7 +5,12 @@ import { TRACKING_ID_PREFIX } from "./constants";
 export const mobileSchema = z
   .string()
   .trim()
-  .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number");
+  .transform((v) => v.replace(/\D/g, "").slice(-10))
+  .pipe(
+    z
+      .string()
+      .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number (starting with 6-9)"),
+  );
 
 /**
  * A ward NUMBER format check only. Whether a ward is actually served is decided
@@ -15,8 +20,7 @@ export const mobileSchema = z
 export const wardSchema = z.coerce
   .number({ message: "Ward must be a number" })
   .int("Ward must be a whole number")
-  .min(1, "Ward must be a positive number")
-  .max(999, "Ward number looks invalid");
+  .refine((w) => [12, 13, 14].includes(w), "Ward selection must be Ward 12, 13, or 14");
 
 export const trackingIdSchema = z
   .string()
@@ -44,16 +48,16 @@ export const manualLocationSchema = z
   .pipe(
     z
       .string()
-      .min(3, "Please enter at least 3 characters")
+      .min(5, "Complete problem address is required (at least 5 characters)")
       .max(200, "Location text is limited to 200 characters"),
   );
 
 export const createComplaintSchema = z
   .object({
-    citizenName: z.string().trim().min(2, "Name is too short").max(80, "Name is too long"),
+    citizenName: z.string().trim().min(2, "Full name is required (at least 2 characters)").max(80, "Name is too long"),
     citizenMobile: mobileSchema,
-    /** Option A — ward/area selection. Optional: GPS/manual may be used instead. */
-    ward: wardSchema.optional(),
+    /** Ward selection — Ward 12, 13, or 14 mandatory. */
+    ward: wardSchema,
     areaId: z.string().uuid("Select a valid area").optional(),
     categoryId: z.string().uuid("Select a valid category"),
     description: z
@@ -68,7 +72,7 @@ export const createComplaintSchema = z
     manualLocationText: manualLocationSchema,
     addressText: z.string().trim().max(200, "Address is limited to 200 characters").optional().or(z.literal("")),
     /** Required nearby landmark (e.g. Near school, temple, main road) */
-    landmarkText: z.string().trim().min(3, "Landmark must be at least 3 characters").max(200, "Landmark text is limited to 200 characters").optional().or(z.literal("")),
+    landmarkText: z.string().trim().min(3, "Nearby landmark is required (at least 3 characters)").max(200, "Landmark text is limited to 200 characters"),
     /** Additional directions (optional, e.g. Opposite the park) */
     directionsText: z.string().trim().max(300, "Directions are limited to 300 characters").optional().or(z.literal("")),
     /** Option B — GPS. Both must be present to count as a GPS location. */

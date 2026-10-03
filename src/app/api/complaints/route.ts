@@ -106,13 +106,28 @@ export async function POST(req: Request) {
     return jsonResponse(req, { error: "Selected category is not available" }, { status: 400 });
   }
 
-  // --- Photo (optional, restricted storage) ---
-  let photoPath: string | null = null;
-  if (photo) {
-    const saved = await validateAndSaveUpload(photo);
-    if ("error" in saved) return jsonResponse(req, { error: saved.error }, { status: 400 });
-    photoPath = saved.fileName;
+  // --- Photo (mandatory, restricted storage) ---
+  if (!photo) {
+    return jsonResponse(
+      req,
+      {
+        error: "At least one photograph of the problem is required",
+        issues: { photo: ["At least one photograph of the problem is required"] },
+      },
+      { status: 400 },
+    );
   }
+
+  let photoPath: string | null = null;
+  const saved = await validateAndSaveUpload(photo);
+  if ("error" in saved) {
+    return jsonResponse(
+      req,
+      { error: saved.error, issues: { photo: [saved.error] } },
+      { status: 400 },
+    );
+  }
+  photoPath = saved.fileName;
 
   // --- Persist (complaint + immutable audit event, atomically) ---
   try {

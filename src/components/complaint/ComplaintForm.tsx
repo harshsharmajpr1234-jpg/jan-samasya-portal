@@ -158,9 +158,28 @@ function ComplaintFormInner() {
     const errs: Record<string, string[]> = {};
     const manual = manualText.trim().replace(/\s+/g, " ");
     const landmark = landmarkText.trim().replace(/\s+/g, " ");
+    const cleanMobile = mobile.replace(/\D/g, "").slice(-10);
 
-    if (manual.length < 3) {
-      errs.manualLocationText = ["Please enter your street, colony, road or house number"];
+    if (!name.trim() || name.trim().length < 2) {
+      errs.citizenName = ["Full name is required (at least 2 characters)"];
+    }
+
+    if (cleanMobile.length !== 10 || !/^[6-9]\d{9}$/.test(cleanMobile)) {
+      errs.citizenMobile = ["Enter a valid 10-digit Indian mobile number (starting with 6-9)"];
+    }
+
+    if (!ward) {
+      errs.ward = ["Please select your ward (Ward 12, 13, or 14)"];
+    }
+
+    if (!categoryId) errs.categoryId = ["Please pick a complaint category"];
+
+    if (!description.trim() || description.trim().length < 10) {
+      errs.description = ["Please describe the problem in at least 10 characters"];
+    }
+
+    if (manual.length < 5) {
+      errs.manualLocationText = ["Please enter your complete address / road / colony (at least 5 characters)"];
     } else if (manual.length > 200) {
       errs.manualLocationText = ["Please keep the address under 200 characters"];
     }
@@ -171,9 +190,8 @@ function ComplaintFormInner() {
       errs.landmarkText = ["Please keep the landmark under 200 characters"];
     }
 
-    if (!categoryId) errs.categoryId = ["Please pick a complaint category"];
-    if (mobile.length !== 10 || !/^[6-9]\d{9}$/.test(mobile)) {
-      errs.citizenMobile = ["Enter a valid 10-digit Indian mobile number"];
+    if (!photo) {
+      errs.photo = ["At least one photograph of the problem is required"];
     }
 
     if (Object.keys(errs).length > 0) {
@@ -186,10 +204,10 @@ function ComplaintFormInner() {
     setSubmitting(true);
     try {
       const fd = new FormData();
-      fd.set("citizenName", name);
-      fd.set("citizenMobile", mobile);
+      fd.set("citizenName", name.trim());
+      fd.set("citizenMobile", cleanMobile);
       fd.set("categoryId", categoryId);
-      fd.set("description", description);
+      fd.set("description", description.trim());
       fd.set("manualLocationText", manual);
       fd.set("addressText", manual);
       fd.set("landmarkText", landmark);
@@ -366,6 +384,7 @@ function ComplaintFormInner() {
                 <option key={w.number} value={w.number}>Ward {w.number}</option>
               ))}
             </select>
+            {fieldErrors.ward && <p className="mt-1 text-xs text-flame">{fieldErrors.ward[0]}</p>}
             <p className="mt-1.5 text-[11px] leading-relaxed text-muted-ink">
               Only Ward 12, 13 and 14 are served.
             </p>
@@ -469,8 +488,8 @@ function ComplaintFormInner() {
 
       {/* ---- Photo ---- */}
       <section className="rounded-3xl border border-line bg-cream p-6 shadow-card sm:p-8">
-        <h2 className="font-display text-lg font-bold">Photo evidence</h2>
-        <p className="mt-1 text-xs text-muted-ink">Optional — a photo helps officers act faster.</p>
+        <h2 className="font-display text-lg font-bold">Photo evidence *</h2>
+        <p className="mt-1 text-xs text-muted-ink">Required — at least one photograph of the problem is required.</p>
         <div className="mt-4">
           {photoPreview ? (
             <div className="relative overflow-hidden rounded-2xl">
