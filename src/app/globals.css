@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-hindi: var(--font-baloo), ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: #f6f2ea;
+  --color-paper-2: #efe8da;
+  --color-cream: #fdfaf3;
+  --color-ink: #0e1830;
+  --color-ink-2: #182650;
+  --color-ink-3: #24356b;
+  --color-muted-ink: #55618a;
+  --color-line: #ddd4c4;
+
+  --color-saffron: #f59e0b;
+  --color-flame: #e35d1c;
+  --color-leaf: #17804a;
+  --color-teal-civic: #0f766e;
+
+  --color-pending: #b45309;
+  --color-pending-bg: #fdf0dc;
+  --color-progress: #075985;
+  --color-progress-bg: #e0eff9;
+  --color-resolved: #166534;
+  --color-resolved-bg: #e2f3e7;
+
+  --shadow-card: 0 1px 2px rgb(14 24 48 / 0.05), 0 12px 32px -12px rgb(14 24 48 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(14 24 48 / 0.06), 0 24px 48px -16px rgb(14 24 48 / 0.28);
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-pulse-soft: pulseSoft 3.2s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes pulseSoft {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--color-saffron);
+  color: var(--color-ink);
+}
+
+/* Subtle paper grain so large flat areas never look sterile */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* Fine blueprint-ish grid for dark panels */
+.bg-grid-dark {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
+}
+
+.card-hover {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+}
+
+/* Leaflet theming to match the portal */
+.leaflet-container {
+  font-family: var(--font-body);
+  background: #e8e2d4;
+  outline: none;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+.pin-marker {
+  filter: drop-shadow(0 6px 8px rgb(14 24 48 / 0.35));
+}
+
+/* Thin elegant scrollbar for panels */
+.nice-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.nice-scroll::-webkit-scrollbar-thumb { background: #c9bfa9; border-radius: 99px; }
+.nice-scroll::-webkit-scrollbar-track { background: transparent; }
