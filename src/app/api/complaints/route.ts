@@ -28,6 +28,13 @@ function str(v: FormDataEntryValue | null): string | undefined {
  */
 export async function POST(req: Request) {
   const citizenSession = await getCitizenSession();
+  if (!citizenSession) {
+    return jsonResponse(
+      req,
+      { error: "Citizen authentication required to submit a complaint. Please log in first." },
+      { status: 401 },
+    );
+  }
 
   // Rate limit: 5 complaint registrations per 10 minutes per IP.
   const rl = rateLimit(`complaint:${clientIp(req)}`, 5, 10 * 60 * 1000);
@@ -43,8 +50,8 @@ export async function POST(req: Request) {
       const maybePhoto = form.get("photo");
       if (maybePhoto instanceof File && maybePhoto.size > 0) photo = maybePhoto;
       raw = {
-        citizenName: str(form.get("citizenName")) || citizenSession?.name,
-        citizenMobile: str(form.get("citizenMobile")) || citizenSession?.mobile,
+        citizenName: str(form.get("citizenName")) || citizenSession.name,
+        citizenMobile: str(form.get("citizenMobile")) || citizenSession.mobile,
         ward: str(form.get("ward")),
         areaId: str(form.get("areaId")),
         categoryId: str(form.get("categoryId")),

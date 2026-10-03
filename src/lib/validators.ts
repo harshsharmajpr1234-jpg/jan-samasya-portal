@@ -5,7 +5,10 @@ import { TRACKING_ID_PREFIX } from "./constants";
 export const mobileSchema = z
   .string()
   .trim()
-  .transform((v) => v.replace(/\D/g, "").slice(-10))
+  .transform((v) => {
+    const d = v.replace(/\D/g, "");
+    return d.length > 10 ? d.slice(-10) : d;
+  })
   .pipe(
     z
       .string()

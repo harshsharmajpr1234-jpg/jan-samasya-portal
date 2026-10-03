@@ -47,7 +47,7 @@ function RegisterFormInner() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (data.issues) setFieldErrors(data.issues);
-        setError(data.error ?? "Registration failed. Please check your entries.");
+        setError(data.error === "Validation failed" ? "Please correct the highlighted fields below." : (data.error ?? "Registration failed. Please check your entries."));
         return;
       }
 
@@ -102,7 +102,11 @@ function RegisterFormInner() {
                 id="mobile"
                 className="w-full bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-ink/50"
                 value={mobile}
-                onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, "");
+                  const clean = raw.length > 10 && (raw.startsWith("91") || raw.startsWith("0")) ? raw.slice(-10) : raw.slice(0, 10);
+                  setMobile(clean);
+                }}
                 inputMode="numeric"
                 placeholder="10-digit mobile number"
                 required

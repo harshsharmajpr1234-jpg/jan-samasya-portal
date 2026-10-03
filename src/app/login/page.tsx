@@ -71,7 +71,11 @@ function CitizenLoginForm() {
                 id="mobile"
                 className="w-full bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-ink/50"
                 value={mobile}
-                onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, "");
+                  const clean = raw.length > 10 && (raw.startsWith("91") || raw.startsWith("0")) ? raw.slice(-10) : raw.slice(0, 10);
+                  setMobile(clean);
+                }}
                 inputMode="numeric"
                 placeholder="10-digit mobile number"
                 required
