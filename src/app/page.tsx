@@ -177,22 +177,6 @@ export default async function HomePage() {
                 priority
                 className="relative h-[360px] w-full object-cover sm:h-[420px]"
               />
-              {/* Floating live counters */}
-              <div className="absolute -left-3 top-6 animate-float rounded-2xl border border-line bg-cream/95 px-4 py-3 shadow-lift backdrop-blur sm:-left-6">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-ink">Complaints resolved</p>
-                <p className="font-display text-2xl font-bold text-leaf">
-                  <StatNumber value={totals?.resolved ?? 0} />
-                </p>
-              </div>
-              <div
-                className="absolute -bottom-5 right-4 animate-float rounded-2xl border border-line bg-ink px-4 py-3 text-cream shadow-lift"
-                style={{ animationDelay: "1.4s" }}
-              >
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cream/60">Registered Citizens</p>
-                <p className="font-display text-2xl font-bold text-saffron">
-                  <StatNumber value={totals?.registeredCitizens ?? 0} />
-                </p>
-              </div>
             </div>
           </Reveal>
         </div>
