@@ -5,11 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Landmark,
-  Menu,
-  X,
   PlusCircle,
   Search,
-  Building2,
   UserCheck,
   UserRound,
   LogIn,
@@ -24,32 +21,15 @@ interface Props {
 }
 
 export default function SiteHeaderNav({ wardLabel, citizenSession }: Props) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Close mobile menu whenever user navigates to a new page
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
-
-  // Prevent background scrolling when mobile menu is open
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [mobileMenuOpen]);
-
   return (
-    <>
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:px-6">
+    <div className="mx-auto max-w-6xl px-3 sm:px-6">
+      {/* Top Header Row (Desktop + Mobile Logo & Desktop Nav) */}
+      <div className="flex h-14 sm:h-16 items-center justify-between gap-2">
         {/* Logo */}
         <Link href="/" className="group flex items-center gap-2.5 min-w-0">
-          <span className="grid size-9 sm:size-10 shrink-0 place-items-center rounded-xl bg-ink text-cream shadow-card transition-transform group-hover:-rotate-6">
+          <span className="grid size-8 sm:size-10 shrink-0 place-items-center rounded-xl bg-ink text-cream shadow-card transition-transform group-hover:-rotate-6">
             <Landmark className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
           </span>
           <span className="leading-tight min-w-0 truncate">
@@ -107,136 +87,81 @@ export default function SiteHeaderNav({ wardLabel, citizenSession }: Props) {
             Officer Login
           </Link>
         </nav>
-
-        {/* Mobile Action Controls */}
-        <div className="flex items-center gap-1.5 md:hidden">
-          <Link
-            href="/complaint/new"
-            className="inline-flex items-center gap-1 rounded-xl bg-saffron px-3 py-1.5 text-xs font-bold text-ink shadow-sm transition active:scale-95"
-          >
-            <PlusCircle className="h-3.5 w-3.5" aria-hidden />
-            <span>File</span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="grid size-9 place-items-center rounded-xl border border-line bg-paper text-ink transition active:bg-paper-2"
-            aria-label={mobileMenuOpen ? "Close menu" : "Open navigation menu"}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
       </div>
 
-      {/* Mobile Navigation Drawer Overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 top-[calc(4rem+1.75rem)] z-50 flex flex-col bg-paper/95 backdrop-blur-lg md:hidden animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            <p className="mb-3 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-ink">
-              Navigation & Services
-            </p>
+      {/* Mobile Action Bar (Always visible on small screens with clean pills) */}
+      <nav
+        className="flex items-center justify-between gap-1.5 pb-2.5 pt-1 md:hidden overflow-x-auto no-scrollbar"
+        aria-label="Mobile quick navigation"
+      >
+        <Link
+          href="/complaint/new"
+          className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${
+            pathname === "/complaint/new"
+              ? "bg-saffron text-ink shadow-sm ring-2 ring-saffron/40"
+              : "bg-saffron text-ink shadow-sm"
+          }`}
+        >
+          <PlusCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span>File</span>
+        </Link>
 
-            <div className="space-y-2">
-              <Link
-                href="/complaint/new"
-                className="flex items-center gap-3.5 rounded-2xl bg-saffron/15 border border-saffron/30 p-3.5 text-sm font-bold text-ink transition active:scale-[0.99]"
-              >
-                <span className="grid size-9 place-items-center rounded-xl bg-saffron text-ink">
-                  <PlusCircle className="h-5 w-5" />
-                </span>
-                <div>
-                  <div className="font-bold">File a Complaint</div>
-                  <div className="text-xs font-normal text-muted-ink">Register new problem with GPS & photo</div>
-                </div>
-              </Link>
+        <Link
+          href="/track"
+          className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+            pathname === "/track"
+              ? "border-saffron bg-paper-2 text-ink font-bold"
+              : "border-line bg-paper text-ink"
+          }`}
+        >
+          <Search className="h-3.5 w-3.5 shrink-0 text-muted-ink" aria-hidden />
+          <span>Track</span>
+        </Link>
 
-              <Link
-                href="/track"
-                className="flex items-center gap-3.5 rounded-2xl bg-cream border border-line p-3.5 text-sm font-bold text-ink transition active:scale-[0.99]"
-              >
-                <span className="grid size-9 place-items-center rounded-xl bg-ink/5 text-ink">
-                  <Search className="h-5 w-5" />
-                </span>
-                <div>
-                  <div className="font-bold">Track Status</div>
-                  <div className="text-xs font-normal text-muted-ink">Check progress using Tracking ID</div>
-                </div>
-              </Link>
+        {citizenSession ? (
+          <Link
+            href="/profile"
+            className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-cream transition ${
+              pathname === "/profile" ? "bg-ink" : "bg-flame"
+            }`}
+          >
+            <UserCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>Profile</span>
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-cream transition ${
+              pathname === "/login" ? "bg-ink" : "bg-flame"
+            }`}
+          >
+            <LogIn className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>Login</span>
+          </Link>
+        )}
 
-              <Link
-                href="/#wards"
-                className="flex items-center gap-3.5 rounded-2xl bg-cream border border-line p-3.5 text-sm font-bold text-ink transition active:scale-[0.99]"
-              >
-                <span className="grid size-9 place-items-center rounded-xl bg-ink/5 text-ink">
-                  <Building2 className="h-5 w-5" />
-                </span>
-                <div>
-                  <div className="font-bold">Our Wards</div>
-                  <div className="text-xs font-normal text-muted-ink">Ward 12, 13 & 14 coverage scope</div>
-                </div>
-              </Link>
-            </div>
+        {!citizenSession && (
+          <Link
+            href="/register"
+            className={`inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border border-flame px-2.5 py-2 text-xs font-semibold text-flame transition ${
+              pathname === "/register" ? "bg-flame text-cream" : "bg-cream"
+            }`}
+          >
+            <UserPlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>Reg</span>
+          </Link>
+        )}
 
-            <p className="mb-3 mt-6 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-ink">
-              Citizen Account
-            </p>
-
-            <div className="space-y-2">
-              {citizenSession ? (
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-3.5 rounded-2xl bg-flame text-cream p-3.5 text-sm font-bold transition active:scale-[0.99]"
-                >
-                  <span className="grid size-9 place-items-center rounded-xl bg-cream/20 text-cream">
-                    <UserCheck className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <div className="font-bold">{citizenSession.name}</div>
-                    <div className="text-xs text-cream/80">{citizenSession.mobile} · View My Profile & Complaints</div>
-                  </div>
-                </Link>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <Link
-                    href="/login"
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-flame px-4 py-3 text-sm font-bold text-cream transition active:scale-[0.98]"
-                  >
-                    <LogIn className="h-4 w-4" />
-                    <span>Citizen Login</span>
-                  </Link>
-
-                  <Link
-                    href="/register"
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-flame bg-cream px-4 py-3 text-sm font-bold text-flame transition active:scale-[0.98]"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    <span>Register</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <p className="mb-3 mt-6 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-ink">
-              Officer Console
-            </p>
-
-            <Link
-              href="/officer/login"
-              className="flex items-center gap-3.5 rounded-2xl bg-ink text-cream p-3.5 text-sm font-bold transition active:scale-[0.99]"
-            >
-              <span className="grid size-9 place-items-center rounded-xl bg-cream/10 text-saffron">
-                <UserRound className="h-5 w-5" />
-              </span>
-              <div>
-                <div className="font-bold">Officer / Admin Login</div>
-                <div className="text-xs text-cream/70">Authorized Ward Officers & Manch Admins only</div>
-              </div>
-            </Link>
-          </div>
-        </div>
-      )}
-    </>
+        <Link
+          href="/officer/login"
+          className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2 text-xs font-semibold text-cream transition ${
+            pathname?.startsWith("/officer") ? "ring-2 ring-saffron" : ""
+          }`}
+        >
+          <UserRound className="h-3.5 w-3.5 shrink-0 text-saffron" aria-hidden />
+          <span>Officer</span>
+        </Link>
+      </nav>
+    </div>
   );
 }
