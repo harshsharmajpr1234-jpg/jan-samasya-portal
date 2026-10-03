@@ -17,7 +17,13 @@ import {
  * store photos in the database or in browser storage.
  */
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "data", "uploads");
+import os from "os";
+
+const UPLOAD_DIR =
+  process.env.UPLOAD_DIR ??
+  (process.env.NETLIFY || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+    ? path.join(os.tmpdir(), "jsnm-uploads")
+    : path.join(process.cwd(), "data", "uploads"));
 
 const EXT_BY_MIME: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -52,25 +58,29 @@ export interface SavedUpload {
 export async function validateAndSaveUpload(
   file: File,
 ): Promise<SavedUpload | { error: string }> {
-  if (file.size === 0) return { error: "The uploaded photo is empty" };
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return { error: `Photo must be smaller than ${MAX_UPLOAD_MB} MB` };
-  }
-  if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
-    return { error: "Only JPG, PNG or WebP photos are allowed" };
-  }
+  try {
+    if (file.size === 0) return { error: "The uploaded photo is empty" };
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return { error: `Photo must be smaller than ${MAX_UPLOAD_MB} MB` };
+    }
+    if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+      return { error: "Only JPG, PNG or WebP photos are allowed" };
+    }
 
-  const buf = Buffer.from(await file.arrayBuffer());
-  const sniffed = sniffMime(buf);
-  if (!sniffed || sniffed !== file.type) {
-    return { error: "The file content is not a valid image" };
-  }
+    const buf = Buffer.from(await file.arrayBuffer());
+    const sniffed = sniffMime(buf);
+    if (!sniffed || sniffed !== file.type) {
+      return { error: "The file content is not a valid image" };
+    }
 
-  const fileName = `${randomUUID()}${EXT_BY_MIME[sniffed]}`;
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  // Runtime path is dynamic by design (env-configurable private storage dir).
-  await writeFile(path.join(/* turbopackIgnore: true */ UPLOAD_DIR, fileName), buf);
-  return { fileName, size: file.size, mime: sniffed };
+    const fileName = `${randomUUID()}${EXT_BY_MIME[sniffed]}`;
+    await mkdir(UPLOAD_DIR, { recursive: true });
+    await writeFile(path.join(UPLOAD_DIR, fileName), buf);
+    return { fileName, size: file.size, mime: sniffed };
+  } catch (err) {
+    console.error("upload-save-failed", err);
+    return { error: "Failed to save uploaded photo. Please try a smaller photo or different format." };
+  }
 }
 
 const SAFE_NAME = /^[0-9a-f-]{36}\.(jpg|png|webp)$/;

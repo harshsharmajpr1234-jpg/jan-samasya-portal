@@ -36,8 +36,8 @@ export async function POST(req: Request) {
     );
   }
 
-  // Rate limit: 5 complaint registrations per 10 minutes per IP.
-  const rl = rateLimit(`complaint:${clientIp(req)}`, 5, 10 * 60 * 1000);
+  // Rate limit: 20 complaint registrations per 10 minutes per IP.
+  const rl = rateLimit(`complaint:${clientIp(req)}`, 20, 10 * 60 * 1000);
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
 
   // --- Parse body ---
